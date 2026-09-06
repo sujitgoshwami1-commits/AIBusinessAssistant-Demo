@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="day">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Business Assistant — Writer, FAQ Bot &amp; Summarizer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1A1B26;
+    --paper:#F5F5F7;
+    --paper-2:#EAEAF0;
+    --line:#D9D9E3;
+    --violet:#5B5FEF;
+    --violet-deep:#4347C4;
+    --mint:#12B886;
+    --mint-deep:#0C9268;
+    --muted:#71717F;
+    --success:#12B886;
+    --danger:#B23B3B;
+    --warn:#C79A2B;
+    --card:#FFFFFF;
+    --font-display:'Space Grotesk', sans-serif;
+    --font-body:'Inter', sans-serif;
+    --font-mono:'JetBrains Mono', monospace;
+    --shadow: 0 1px 2px rgba(26,27,38,0.07), 0 1px 0 rgba(26,27,38,0.04);
+  }
+  [data-theme="night"]{
+    --ink:#ECECF2;
+    --paper:#14141C;
+    --paper-2:#1A1A24;
+    --line:#2B2B38;
+    --violet:#8A8DF5;
+    --violet-deep:#6A6EE0;
+    --mint:#3DD9A8;
+    --mint-deep:#12B886;
+    --muted:#8E8E9C;
+    --card:#1A1A24;
+    --shadow: 0 1px 2px rgba(0,0,0,0.4);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--paper);color:var(--ink);font-family:var(--font-body);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+  h1,h2,h3,h4{font-family:var(--font-display);margin:0;letter-spacing:-0.01em;}
+  button{font-family:inherit;cursor:pointer;}
+  a{color:inherit;}
+
+  .shell{display:grid;grid-template-columns:230px 1fr;min-height:100vh;}
+  @media (max-width:860px){ .shell{grid-template-columns:1fr;} .sidebar{position:fixed;z-index:40;height:100vh;transform:translateX(-100%);transition:transform .2s ease;} .sidebar.open{transform:translateX(0);} }
+
+  .sidebar{background:var(--paper-2);border-right:1px solid var(--line);padding:18px 14px;display:flex;flex-direction:column;gap:22px;}
+  .brand{display:flex;align-items:center;gap:10px;padding:2px 6px 10px;border-bottom:1px solid var(--line);}
+  .brand-mark{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg, var(--violet), var(--mint));display:flex;align-items:center;justify-content:center;position:relative;flex-shrink:0;}
+  .brand-mark svg{width:16px;height:16px;stroke:#fff;}
+  .brand-name{font-family:var(--font-display);font-weight:700;font-size:15px;}
+  .brand-tag{font-size:10.5px;color:var(--muted);font-family:var(--font-mono);letter-spacing:.02em;}
+
+  .nav{display:flex;flex-direction:column;gap:2px;}
+  .nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:5px;color:var(--ink);text-decoration:none;font-size:13.5px;font-weight:500;border:1px solid transparent;background:transparent;width:100%;text-align:left;}
+  .nav-item svg{width:16px;height:16px;flex-shrink:0;opacity:.75;}
+  .nav-item:hover{background:var(--card);}
+  .nav-item.active{background:var(--card);border-color:var(--line);box-shadow:var(--shadow);}
+  .nav-item.active svg{opacity:1;color:var(--violet);stroke:var(--violet);}
+
+  .sidebar-foot{margin-top:auto;padding-top:12px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:8px;}
+  .toggle-row{display:flex;gap:6px;}
+  .toggle-btn{flex:1;padding:7px 6px;font-size:12px;border-radius:5px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-weight:500;}
+  .toggle-btn.active{background:var(--violet);color:#fff;border-color:var(--violet);}
+  .status-pill{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);padding:6px 8px;background:var(--card);border:1px solid var(--line);border-radius:5px;}
+  .status-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+  .status-dot.connected{background:var(--success);}
+
+  .main{padding:22px 26px 60px;max-width:1180px;}
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px;flex-wrap:wrap;}
+  .menu-btn{display:none;background:var(--card);border:1px solid var(--line);border-radius:5px;padding:8px;}
+  @media (max-width:860px){.menu-btn{display:inline-flex;}}
+  .page-title{font-size:21px;font-weight:700;}
+  .page-sub{color:var(--muted);font-size:12.5px;margin-top:2px;}
+  .search-add{display:flex;gap:8px;align-items:center;}
+  .search-box{display:flex;align-items:center;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:5px;padding:7px 10px;min-width:190px;}
+  .search-box input{border:none;background:transparent;outline:none;color:var(--ink);font-size:13px;width:100%;}
+  .search-box svg{width:14px;height:14px;opacity:.6;flex-shrink:0;}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:9px 14px;border-radius:5px;border:1px solid transparent;font-size:13px;font-weight:600;white-space:nowrap;}
+  .btn-primary{background:var(--violet);color:#fff;}
+  .btn-primary:hover{background:var(--violet-deep);}
+  .btn-primary:disabled{opacity:.6;cursor:not-allowed;}
+  .btn-ghost{background:var(--card);border-color:var(--line);color:var(--ink);}
+  .btn-ghost:hover{background:var(--paper-2);}
+  .btn-danger{background:transparent;color:var(--danger);border-color:var(--danger);}
+  .btn-sm{padding:5px 9px;font-size:12px;}
+
+  .stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:22px;}
+  .stat-card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:14px 16px;box-shadow:var(--shadow);position:relative;}
+  .stat-num{font-family:var(--font-display);font-size:24px;font-weight:700;}
+  .stat-label{font-size:12px;color:var(--muted);margin-top:2px;}
+  .stat-dot{position:absolute;top:14px;right:14px;width:8px;height:8px;border-radius:50%;}
+
+  .tool-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
+  .tool-tab{padding:8px 14px;border-radius:20px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:12.5px;font-weight:600;}
+  .tool-tab.active{background:var(--violet);color:#fff;border-color:var(--violet);}
+
+  .assistant-panel{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:18px;box-shadow:var(--shadow);}
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:12px;font-weight:600;margin-bottom:5px;color:var(--muted);}
+  .field input, .field select, .field textarea{width:100%;padding:9px 10px;border-radius:5px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font-size:13px;outline:none;}
+  .field textarea{resize:vertical;min-height:90px;}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+  .result-box{margin-top:16px;padding:16px;background:var(--paper-2);border:1px solid var(--line);border-radius:6px;white-space:pre-wrap;font-size:13.5px;line-height:1.6;position:relative;}
+  .result-mode-badge{display:inline-block;font-size:10px;font-family:var(--font-mono);padding:2px 8px;border-radius:10px;font-weight:700;margin-bottom:8px;}
+  .result-mode-badge.ai{background:rgba(91,95,239,0.15);color:var(--violet);}
+  .result-mode-badge.offline{background:rgba(113,113,127,0.15);color:var(--muted);}
+  .result-actions{display:flex;gap:8px;margin-top:10px;}
+
+  .chat-log{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;max-height:400px;overflow-y:auto;padding-right:4px;}
+  .chat-msg{max-width:80%;padding:10px 13px;border-radius:10px;font-size:13px;line-height:1.5;white-space:pre-wrap;}
+  .chat-msg.user{align-self:flex-end;background:var(--violet);color:#fff;border-bottom-right-radius:3px;}
+  .chat-msg.assistant{align-self:flex-start;background:var(--paper-2);border:1px solid var(--line);border-bottom-left-radius:3px;}
+  .chat-msg .badge{display:inline-block;font-size:9.5px;font-family:var(--font-mono);padding:1px 6px;border-radius:8px;margin-bottom:5px;font-weight:700;}
+  .chat-msg .badge.ai{background:rgba(91,95,239,0.15);color:var(--violet);}
+  .chat-msg .badge.offline{background:rgba(113,113,127,0.15);color:var(--muted);}
+  .chat-input-row{display:flex;gap:8px;}
+  .chat-input-row input{flex:1;padding:10px 12px;border-radius:6px;border:1px solid var(--line);background:var(--paper);color:var(--ink);font-size:13px;outline:none;}
+
+  .list-card{background:var(--card);border:1px solid var(--line);border-radius:6px;padding:13px 15px;box-shadow:var(--shadow);display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px;flex-wrap:wrap;}
+  .list-main{flex:1;min-width:0;}
+  .list-title{font-weight:600;font-size:13.5px;}
+  .list-sub{font-size:12px;color:var(--muted);margin-top:1px;white-space:pre-wrap;}
+  .list-actions{display:flex;gap:6px;flex-shrink:0;}
+  .pill{font-size:11px;padding:3px 9px;border-radius:20px;background:var(--paper-2);border:1px solid var(--line);font-weight:600;}
+
+  .empty{text-align:center;padding:50px 20px;color:var(--muted);border:1px dashed var(--line);border-radius:8px;font-size:13px;}
+  .empty svg{width:34px;height:34px;opacity:.4;margin-bottom:10px;}
+
+  .section-head{display:flex;align-items:center;justify-content:space-between;margin:26px 0 12px;}
+  .section-head h3{font-size:14.5px;}
+  .filter-row{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .filter-row select, .filter-row input{padding:7px 10px;border-radius:5px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:12.5px;}
+
+  .overlay{position:fixed;inset:0;background:rgba(20,20,28,0.5);display:none;align-items:flex-start;justify-content:center;padding:40px 16px;overflow-y:auto;z-index:100;}
+  .overlay.show{display:flex;}
+  .modal{background:var(--paper);border:1px solid var(--line);border-radius:8px;width:100%;max-width:540px;padding:22px;box-shadow:0 10px 40px rgba(0,0,0,0.2);}
+  .modal h3{font-size:16px;margin-bottom:16px;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:18px;}
+
+  .toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--paper);padding:10px 18px;border-radius:6px;font-size:13px;opacity:0;pointer-events:none;transition:all .25s ease;z-index:200;max-width:80%;text-align:center;}
+  [data-theme="night"] .toast{background:#ECECF2;color:#14141C;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  .settings-note{background:rgba(199,154,43,0.1);border:1px solid rgba(199,154,43,0.3);border-radius:6px;padding:12px 14px;font-size:12.5px;color:var(--ink);margin-bottom:16px;line-height:1.6;}
+
+  ::placeholder{color:var(--muted);opacity:.7;}
+  .hint{font-size:11.5px;color:var(--muted);margin-top:5px;}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a4 4 0 0 1 4 4v1a4 4 0 0 1-4 4 4 4 0 0 1-4-4V6a4 4 0 0 1 4-4z"/><path d="M8 14v2a4 4 0 0 0 8 0v-2"/><path d="M12 20v2"/></svg>
+      </div>
+      <div>
+        <div class="brand-name">AI Assistant</div>
+        <div class="brand-tag">Writer · FAQ · Summarizer</div>
+      </div>
+    </div>
+    <nav class="nav" id="navList">
+      <button class="nav-item active" data-view="dashboard">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+        <span>Dashboard</span>
+      </button>
+      <button class="nav-item" data-view="assistant">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span>Assistant</span>
+      </button>
+      <button class="nav-item" data-view="knowledge">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+        <span>Knowledge Base</span>
+      </button>
+      <button class="nav-item" data-view="history">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
+        <span>History</span>
+      </button>
+      <button class="nav-item" data-view="settings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Settings</span>
+      </button>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="status-pill"><span class="status-dot" id="connDot"></span><span id="connLabel">Offline mode</span></div>
+      <div class="toggle-row">
+        <button class="toggle-btn active" id="btnDay">Day</button>
+        <button class="toggle-btn" id="btnNight">Night</button>
+      </div>
+      <button class="nav-item btn-danger" id="btnReset" style="border:1px solid var(--line);">
+        <span>Reset Demo Data</span>
+      </button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <button class="menu-btn" id="menuBtn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      </button>
+      <div>
+        <div class="page-title" id="pageTitle">Dashboard</div>
+        <div class="page-sub" id="pageSub"></div>
+      </div>
+      <div class="search-add">
+        <div class="search-box" id="searchBoxWrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <input type="text" id="searchInput" placeholder="Search knowledge base, history...">
+        </div>
+        <button class="btn btn-primary" id="btnQuickAdd">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
+          <span id="quickAddLabel">New FAQ Entry</span>
+        </button>
+      </div>
+    </div>
+    <div id="viewRoot"></div>
+  </main>
+</div>
+
+<div class="overlay" id="overlay"><div class="modal" id="modalBody"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============ Strings ============ */
+const STR = {
+  dashboard:"Dashboard", assistant:"Assistant", knowledge:"Knowledge Base", history:"History", settings:"Settings",
+  sub_dashboard:"Your AI-powered business toolkit at a glance",
+  sub_assistant:"Business Writer, Customer FAQ, and Text Summarizer in one place",
+  sub_knowledge:"FAQ entries used to answer customer questions",
+  sub_history:"Everything you've generated so far",
+  sub_settings:"Connect your own AI provider, or use offline mode",
+  newFaq:"New FAQ Entry",
+  edit:"Edit", delete:"Delete", save:"Save", cancel:"Cancel",
+  question:"Question", answer:"Answer", category:"Category",
+  noFaq:"No FAQ entries yet. Add some to power the Customer FAQ tool.",
+  noHistory:"Nothing generated yet — try the Assistant tab.",
+  totalGenerations:"Total Generations", faqEntries:"FAQ Entries", aiCalls:"AI-Powered Replies", offlineCalls:"Offline Replies",
+  toolUsage:"Usage by Tool",
+  confirmDelete:"Are you sure you want to delete this?", saved:"Saved", deleted:"Deleted",
+  resetConfirm:"This will reset all demo data, including your saved API key. Continue?", resetDone:"Demo data reset",
+  searchPh:"Search knowledge base, history...",
+  writerTool:"Business Writer", faqTool:"Customer FAQ", summarizerTool:"Summarizer",
+  contentType:"Content Type", tone:"Tone", topic:"Topic / Context", generate:"Generate",
+  email:"Email", proposal:"Proposal", bizplan:"Business Plan Outline", social:"Social Media Post",
+  formal:"Formal", friendly:"Friendly", persuasive:"Persuasive",
+  askQuestion:"Ask a customer question...", send:"Send",
+  pasteText:"Paste the text you want summarized...", summaryLength:"Summary Length", short:"Short", medium:"Medium", summarize:"Summarize",
+  provider:"AI Provider", apiKey:"API Key", model:"Model", testConnection:"Save & Test Connection",
+  copy:"Copy",
+};
+function t(key){ return STR[key] || key; }
+
+/* ============ Data model ============ */
+const STORE_KEY = 'aiassistant_data_v1';
+function seedData(){
+  return {
+    settings:{ provider:'openai', apiKey:'', model:'' },
+    knowledge:[
+      {id:'k1', question:'What are your business hours?', answer:'We are open Monday to Friday, 9 AM to 6 PM. We are closed on weekends and public holidays.', category:'General'},
+      {id:'k2', question:'How do I request a refund?', answer:'Email our support team within 14 days of purchase with your order number, and we will process your refund within 5 business days.', category:'Billing'},
+      {id:'k3', question:'Do you offer custom pricing for teams?', answer:'Yes — for teams of 5 or more, contact our sales team for a custom quote based on your needs.', category:'Pricing'},
+    ],
+    history:[]
+  };
+}
+const SEED_DATE_KEY = 'aiassistant_seed_date';
+function todayStr(){ return new Date().toDateString(); }
+function loadData(){
+  const today = todayStr();
+  const lastSeedDate = localStorage.getItem(SEED_DATE_KEY);
+  let raw = localStorage.getItem(STORE_KEY);
+  if(!raw || lastSeedDate !== today){
+    const seed = seedData();
+    localStorage.setItem(STORE_KEY, JSON.stringify(seed));
+    localStorage.setItem(SEED_DATE_KEY, today);
+    return seed;
+  }
+  try{
+    const parsed = JSON.parse(raw);
+    if(!parsed.settings) parsed.settings = { provider:'openai', apiKey:'', model:'' };
+    return parsed;
+  }catch(e){ const seed = seedData(); localStorage.setItem(STORE_KEY, JSON.stringify(seed)); localStorage.setItem(SEED_DATE_KEY, today); return seed; }
+}
+function saveData(){ localStorage.setItem(STORE_KEY, JSON.stringify(DATA)); }
+let DATA = loadData();
+
+/* ============ State ============ */
+let currentView = 'dashboard';
+let searchTerm = '';
+let activeTool = 'writer';
+let faqChatLog = [];
+let isGenerating = false;
+
+/* ============ Helpers ============ */
+function uid(prefix){ return prefix + '-' + Math.floor(1000 + Math.random()*9000); }
+function showToast(msg){ const el = document.getElementById('toast'); el.textContent = msg; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'), 2200); }
+function fmtDateTime(iso){ if(!iso) return ''; const d = new Date(iso); return d.toLocaleDateString('en-GB', {day:'2-digit', month:'short'}) + ' ' + d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); }
+function escapeHtml(str){ if(str==null) return ''; return String(str).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function escapeAttr(str){ return escapeHtml(str); }
+function hasApiKey(){ return !!(DATA.settings.apiKey && DATA.settings.apiKey.trim()); }
+
+function addHistory(tool, prompt, response, mode){
+  DATA.history.unshift({ id: uid('h'), tool, prompt, response, mode, timestamp: new Date().toISOString() });
+  if(DATA.history.length > 200) DATA.history = DATA.history.slice(0,200);
+  saveData();
+}
+
+/* ============ AI API calls (uses the user's own key, called directly from the browser) ============ */
+async function callOpenAI(apiKey, model, systemPrompt, userPrompt){
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+apiKey },
+    body: JSON.stringify({
+      model: model || 'gpt-4o-mini',
+      messages: [ {role:'system', content: systemPrompt}, {role:'user', content: userPrompt} ],
+      max_tokens: 700
+    })
+  });
+  if(!res.ok){ const errText = await res.text().catch(()=> ''); throw new Error('OpenAI error ('+res.status+'): '+errText.slice(0,200)); }
+  const data = await res.json();
+  return (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content) || '';
+}
+async function callAnthropic(apiKey, model, systemPrompt, userPrompt){
+  const res = await fetch('https://api.anthropic.com/v1/messages', {
+    method:'POST',
+    headers:{
+      'Content-Type':'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true'
+    },
+    body: JSON.stringify({
+      model: model || 'claude-3-5-haiku-latest',
+      max_tokens: 700,
+      system: systemPrompt,
+      messages: [ {role:'user', content: userPrompt} ]
+    })
+  });
+  if(!res.ok){ const errText = await res.text().catch(()=> ''); throw new Error('Anthropic error ('+res.status+'): '+errText.slice(0,200)); }
+  const data = await res.json();
+  return (data.content && data.content[0] && data.content[0].text) || '';
+}
+async function callAI(systemPrompt, userPrompt){
+  const { provider, apiKey, model } = DATA.settings;
+  if(provider === 'anthropic') return await callAnthropic(apiKey, model, systemPrompt, userPrompt);
+  return await callOpenAI(apiKey, model, systemPrompt, userPrompt);
+}
+
+/* ============ Offline (rule-based) fallbacks ============ */
+function offlineWriter(contentType, tone, topic){
+  const toneOpeners = {
+    formal: {greeting:'Dear', closing:'Sincerely,'},
+    friendly: {greeting:'Hi', closing:'Best,'},
+    persuasive: {greeting:'Hello', closing:'Looking forward to your reply,'},
+  };
+  const tn = toneOpeners[tone] || toneOpeners.formal;
+  const topicText = topic && topic.trim() ? topic.trim() : '[your topic here]';
+  if(contentType === 'email'){
+    return `Subject: Regarding ${topicText}\n\n${tn.greeting} [Name],\n\nI hope this message finds you well. I'm writing to follow up on ${topicText}.\n\n[Add 2-3 sentences of specific detail here — what you need, why it matters, and any next step you'd like them to take.]\n\nPlease let me know if you have any questions.\n\n${tn.closing}\n[Your Name]`;
+  }
+  if(contentType === 'proposal'){
+    return `PROPOSAL: ${topicText}\n\n1. Overview\n[Briefly describe the problem or opportunity related to ${topicText}.]\n\n2. Proposed Solution\n[Describe what you're offering and how it addresses the need.]\n\n3. Timeline\n[Outline key milestones and dates.]\n\n4. Investment\n[State pricing or budget required.]\n\n5. Next Steps\n[What you'd like the reader to do — approve, schedule a call, sign off, etc.]`;
+  }
+  if(contentType === 'bizplan'){
+    return `BUSINESS PLAN OUTLINE: ${topicText}\n\n1. Executive Summary\n[One paragraph on what the business does and why it will succeed.]\n\n2. Market Opportunity\n[Who is the customer, and what problem does ${topicText} solve for them?]\n\n3. Product / Service\n[What exactly are you offering?]\n\n4. Go-to-Market Strategy\n[How will you reach customers?]\n\n5. Financial Overview\n[Revenue model, costs, and projections.]\n\n6. Team\n[Who is involved and what do they bring?]`;
+  }
+  if(contentType === 'social'){
+    const styleLine = tone==='persuasive' ? `Don't miss out —` : tone==='friendly' ? `Excited to share:` : `Announcement:`;
+    return `${styleLine} ${topicText}\n\n[Add 1-2 sentences describing the key benefit for your audience.]\n\n#YourBrand #${(topicText||'Business').replace(/\s+/g,'')}`;
+  }
+  return `[No template available for this content type. Try Email, Proposal, Business Plan Outline, or Social Media Post.]`;
+}
+function scoreFaqMatch(question, entryQuestion){
+  const stop = new Set(['the','a','an','and','or','is','are','do','does','to','for','of','how','what','can','i','you','your','my']);
+  const words = s => (s.toLowerCase().match(/\b[a-z']+\b/g)||[]).filter(w=>!stop.has(w));
+  const qWords = words(question);
+  const eWords = new Set(words(entryQuestion));
+  if(qWords.length===0) return 0;
+  let matches = 0;
+  qWords.forEach(w=>{ if(eWords.has(w)) matches++; });
+  return matches / qWords.length;
+}
+function offlineFaqAnswer(question){
+  if(DATA.knowledge.length===0) return "I don't have any FAQ entries yet. Add some in the Knowledge Base tab so I can answer customer questions, or connect an AI provider in Settings for open-ended answers.";
+  let best = null, bestScore = 0;
+  DATA.knowledge.forEach(k=>{
+    const score = scoreFaqMatch(question, k.question);
+    if(score > bestScore){ bestScore = score; best = k; }
+  });
+  if(best && bestScore >= 0.3) return best.answer;
+  return "I couldn't find a close match in the knowledge base for that question. Try rephrasing, add a matching FAQ entry in the Knowledge Base tab, or connect an AI provider in Settings for open-ended answers.";
+}
+function summarizeTextOffline(text, sentenceCount){
+  const sentences = (text.match(/[^.!?]+[.!?]+/g) || [text]).map(s=>s.trim()).filter(Boolean);
+  if(sentences.length <= sentenceCount) return sentences.join(' ');
+  const stop = new Set(['the','a','an','and','or','but','in','on','at','to','for','of','with','is','are','was','were','be','this','that','it','as','by','from','has','have','had','will','would','can','could']);
+  const freq = {};
+  sentences.forEach(s=>{
+    (s.toLowerCase().match(/\b[a-z']+\b/g)||[]).forEach(w=>{ if(!stop.has(w)) freq[w] = (freq[w]||0)+1; });
+  });
+  const scored = sentences.map((s,i)=>{
+    const words = s.toLowerCase().match(/\b[a-z']+\b/g) || [];
+    const score = words.reduce((sum,w)=> sum + (freq[w]||0), 0) / (words.length || 1);
+    return { s, i, score };
+  });
+  scored.sort((a,b)=> b.score - a.score);
+  const top = scored.slice(0, sentenceCount).sort((a,b)=> a.i - b.i);
+  return top.map(x=>x.s).join(' ');
+}
+
+/* ============ Rendering: Router ============ */
+const viewRoot = document.getElementById('viewRoot');
+const quickAddLabel = document.getElementById('quickAddLabel');
+const pageSub = document.getElementById('pageSub');
+
+function setView(view){
+  currentView = view;
+  document.querySelectorAll('.nav-item[data-view]').forEach(b=>b.classList.toggle('active', b.dataset.view===view));
+  document.getElementById('pageTitle').textContent = t(view);
+  pageSub.textContent = t('sub_'+view);
+  document.getElementById('btnQuickAdd').style.display = view==='knowledge' ? 'inline-flex':'none';
+  document.getElementById('searchBoxWrap').style.display = (view==='knowledge'||view==='history') ? 'flex' : 'none';
+  quickAddLabel.textContent = t('newFaq');
+  render();
+  document.getElementById('sidebar').classList.remove('open');
+}
+function render(){
+  updateConnectionStatus();
+  if(currentView==='dashboard') renderDashboard();
+  else if(currentView==='assistant') renderAssistant();
+  else if(currentView==='knowledge') renderKnowledge();
+  else if(currentView==='history') renderHistory();
+  else if(currentView==='settings') renderSettings();
+}
+function updateConnectionStatus(){
+  const dot = document.getElementById('connDot');
+  const label = document.getElementById('connLabel');
+  if(hasApiKey()){ dot.classList.add('connected'); label.textContent = DATA.settings.provider==='anthropic' ? 'Claude connected' : 'OpenAI connected'; }
+  else { dot.classList.remove('connected'); label.textContent = 'Offline mode'; }
+}
+
+/* ---------- Dashboard ---------- */
+function renderDashboard(){
+  const total = DATA.history.length;
+  const aiCalls = DATA.history.filter(h=>h.mode==='ai').length;
+  const offlineCalls = DATA.history.filter(h=>h.mode==='offline').length;
+
+  let html = `<div class="stat-row">
+    <div class="stat-card"><div class="stat-dot" style="background:var(--violet)"></div><div class="stat-num">${total}</div><div class="stat-label">${t('totalGenerations')}</div></div>
+    <div class="stat-card"><div class="stat-dot" style="background:var(--mint)"></div><div class="stat-num">${DATA.knowledge.length}</div><div class="stat-label">${t('faqEntries')}</div></div>
+    <div class="stat-card"><div class="stat-dot" style="background:var(--violet)"></div><div class="stat-num">${aiCalls}</div><div class="stat-label">${t('aiCalls')}</div></div>
+    <div class="stat-card"><div class="stat-dot" style="background:var(--muted)"></div><div class="stat-num">${offlineCalls}</div><div class="stat-label">${t('offlineCalls')}</div></div>
+  </div>`;
+
+  if(!hasApiKey()){
+    html += `<div class="settings-note">You're currently in <strong>offline mode</strong> — the Assistant uses built-in templates and simple text matching instead of a real AI model. Add your own OpenAI or Claude API key in <strong>Settings</strong> to get fully AI-generated responses.</div>`;
+  }
+
+  const tools = ['writer','faq','summarizer'];
+  const toolLabel = {writer:t('writerTool'), faq:t('faqTool'), summarizer:t('summarizerTool')};
+  const maxCount = Math.max(1, ...tools.map(tl=>DATA.history.filter(h=>h.tool===tl).length));
+  html += `<div class="section-head"><h3>${t('toolUsage')}</h3></div><div style="display:flex;flex-direction:column;gap:9px;">`;
+  tools.forEach(tl=>{
+    const count = DATA.history.filter(h=>h.tool===tl).length;
+    const pct = Math.round((count/maxCount)*100);
+    html += `<div style="display:grid;grid-template-columns:120px 1fr 40px;gap:10px;align-items:center;font-size:12px;">
+      <div>${toolLabel[tl]}</div>
+      <div style="background:var(--paper-2);border-radius:3px;height:9px;overflow:hidden;"><div style="height:100%;background:var(--violet);border-radius:3px;width:${pct}%;"></div></div>
+      <div>${count}</div>
+    </div>`;
+  });
+  html += `</div>`;
+  viewRoot.innerHTML = html;
+}
+
+/* ---------- Assistant ---------- */
+function renderAssistant(){
+  let html = `<div class="tool-tabs">
+    <button class="tool-tab ${activeTool==='writer'?'active':''}" data-tool="writer">${t('writerTool')}</button>
+    <button class="tool-tab ${activeTool==='faq'?'active':''}" data-tool="faq">${t('faqTool')}</button>
+    <button class="tool-tab ${activeTool==='summarizer'?'active':''}" data-tool="summarizer">${t('summarizerTool')}</button>
+  </div>`;
+
+  if(activeTool==='writer'){
+    html += `<div class="assistant-panel">
+      <div class="field-row">
+        <div class="field"><label>${t('contentType')}</label><select id="w_type">
+          <option value="email">${t('email')}</option><option value="proposal">${t('proposal')}</option>
+          <option value="bizplan">${t('bizplan')}</option><option value="social">${t('social')}</option>
+        </select></div>
+        <div class="field"><label>${t('tone')}</label><select id="w_tone">
+          <option value="formal">${t('formal')}</option><option value="friendly">${t('friendly')}</option><option value="persuasive">${t('persuasive')}</option>
+        </select></div>
+      </div>
+      <div class="field"><label>${t('topic')}</label><textarea id="w_topic" placeholder="e.g. Following up with a client about a delayed shipment"></textarea></div>
+      <button class="btn btn-primary" id="btnGenerateWriter">${t('generate')}</button>
+      <div id="writerResult"></div>
+    </div>`;
+    viewRoot.innerHTML = html;
+    document.getElementById('btnGenerateWriter').onclick = runWriterTool;
+  }
+  else if(activeTool==='faq'){
+    html += `<div class="assistant-panel">
+      <div class="chat-log" id="faqChatLog">${faqChatLog.map(renderChatBubble).join('')}</div>
+      <div class="chat-input-row">
+        <input type="text" id="faqInput" placeholder="${t('askQuestion')}">
+        <button class="btn btn-primary" id="btnFaqSend">${t('send')}</button>
+      </div>
+    </div>`;
+    viewRoot.innerHTML = html;
+    const log = document.getElementById('faqChatLog');
+    log.scrollTop = log.scrollHeight;
+    document.getElementById('btnFaqSend').onclick = runFaqTool;
+    document.getElementById('faqInput').addEventListener('keydown', (e)=>{ if(e.key==='Enter') runFaqTool(); });
+  }
+  else if(activeTool==='summarizer'){
+    html += `<div class="assistant-panel">
+      <div class="field"><label>Text to Summarize</label><textarea id="s_text" placeholder="${t('pasteText')}" style="min-height:160px;"></textarea></div>
+      <div class="field"><label>${t('summaryLength')}</label><select id="s_length">
+        <option value="short">${t('short')}</option><option value="medium">${t('medium')}</option>
+      </select></div>
+      <button class="btn btn-primary" id="btnGenerateSummary">${t('summarize')}</button>
+      <div id="summaryResult"></div>
+    </div>`;
+    viewRoot.innerHTML = html;
+    document.getElementById('btnGenerateSummary').onclick = runSummarizerTool;
+  }
+  document.querySelectorAll('.tool-tab').forEach(b=> b.onclick = ()=>{ activeTool = b.dataset.tool; renderAssistant(); });
+}
+
+function renderResultBox(containerId, text, mode){
+  const el = document.getElementById(containerId);
+  el.innerHTML = `<div class="result-box">
+    <span class="result-mode-badge ${mode}">${mode==='ai' ? 'AI-Generated' : 'Offline Template'}</span>
+    <div>${escapeHtml(text)}</div>
+    <div class="result-actions"><button class="btn btn-ghost btn-sm" id="btnCopyResult">${t('copy')}</button></div>
+  </div>`;
+  document.getElementById('btnCopyResult').onclick = ()=>{
+    navigator.clipboard?.writeText(text).then(()=> showToast('Copied to clipboard')).catch(()=> showToast('Could not copy'));
+  };
+}
+function renderChatBubble(m){
+  return `<div class="chat-msg ${m.role}">${m.role==='assistant' ? `<span class="badge ${m.mode}">${m.mode==='ai'?'AI':'Offline'}</span><br>` : ''}${escapeHtml(m.text)}</div>`;
+}
+
+async function runWriterTool(){
+  if(isGenerating) return;
+  const contentType = document.getElementById('w_type').value;
+  const tone = document.getElementById('w_tone').value;
+  const topic = document.getElementById('w_topic').value.trim();
+  const typeLabelMap = {email:t('email'), proposal:t('proposal'), bizplan:t('bizplan'), social:t('social')};
+  const promptSummary = `${typeLabelMap[contentType]} (${tone}) about: ${topic || '(no topic given)'}`;
+  const btn = document.getElementById('btnGenerateWriter');
+  isGenerating = true; btn.disabled = true; btn.textContent = 'Generating…';
+  let text, mode;
+  if(hasApiKey()){
+    try{
+      const systemPrompt = `You are a business writing assistant. Write clear, professional business content. Match the requested tone exactly.`;
+      const userPrompt = `Write a ${tone} ${typeLabelMap[contentType]} about: ${topic || 'a general business update'}`;
+      text = await callAI(systemPrompt, userPrompt);
+      mode = 'ai';
+    }catch(err){
+      showToast('AI request failed — showing an offline template instead');
+      text = offlineWriter(contentType, tone, topic);
+      mode = 'offline';
+    }
+  } else {
+    text = offlineWriter(contentType, tone, topic);
+    mode = 'offline';
+  }
+  isGenerating = false; btn.disabled = false; btn.textContent = t('generate');
+  renderResultBox('writerResult', text, mode);
+  addHistory('writer', promptSummary, text, mode);
+}
+
+async function runFaqTool(){
+  if(isGenerating) return;
+  const input = document.getElementById('faqInput');
+  const question = input.value.trim();
+  if(!question) return;
+  faqChatLog.push({role:'user', text: question});
+  input.value = '';
+  const log = document.getElementById('faqChatLog');
+  log.innerHTML = faqChatLog.map(renderChatBubble).join('');
+  log.scrollTop = log.scrollHeight;
+  isGenerating = true;
+  let text, mode;
+  if(hasApiKey()){
+    try{
+      const context = DATA.knowledge.map(k=>`Q: ${k.question}\nA: ${k.answer}`).join('\n\n');
+      const systemPrompt = `You are a helpful customer support assistant for a small business. Use the following FAQ knowledge base as context where relevant, but you can also answer general questions politely and concisely:\n\n${context}`;
+      text = await callAI(systemPrompt, question);
+      mode = 'ai';
+    }catch(err){
+      showToast('AI request failed — using knowledge base matching instead');
+      text = offlineFaqAnswer(question);
+      mode = 'offline';
+    }
+  } else {
+    text = offlineFaqAnswer(question);
+    mode = 'offline';
+  }
+  isGenerating = false;
+  faqChatLog.push({role:'assistant', text, mode});
+  log.innerHTML = faqChatLog.map(renderChatBubble).join('');
+  log.scrollTop = log.scrollHeight;
+  addHistory('faq', question, text, mode);
+}
+
+async function runSummarizerTool(){
+  if(isGenerating) return;
+  const text = document.getElementById('s_text').value.trim();
+  if(!text){ showToast('Paste some text first'); return; }
+  const length = document.getElementById('s_length').value;
+  const btn = document.getElementById('btnGenerateSummary');
+  isGenerating = true; btn.disabled = true; btn.textContent = 'Summarizing…';
+  let result, mode;
+  if(hasApiKey()){
+    try{
+      const systemPrompt = `You are a summarization assistant. Produce a ${length==='short'?'very brief, 1-2 sentence':'concise, one-paragraph'} summary of the text the user provides. Do not add commentary — just the summary.`;
+      result = await callAI(systemPrompt, text);
+      mode = 'ai';
+    }catch(err){
+      showToast('AI request failed — using offline summarizer instead');
+      result = summarizeTextOffline(text, length==='short' ? 2 : 4);
+      mode = 'offline';
+    }
+  } else {
+    result = summarizeTextOffline(text, length==='short' ? 2 : 4);
+    mode = 'offline';
+  }
+  isGenerating = false; btn.disabled = false; btn.textContent = t('summarize');
+  renderResultBox('summaryResult', result, mode);
+  addHistory('summarizer', text.slice(0,120) + (text.length>120?'…':''), result, mode);
+}
+
+/* ---------- Knowledge Base ---------- */
+function renderKnowledge(){
+  let list = DATA.knowledge.filter(k=> !searchTerm || (k.question+k.answer+k.category).toLowerCase().includes(searchTerm.toLowerCase()));
+  if(list.length===0){ viewRoot.innerHTML = `<div class="empty">${emptyIcon()}<div>${t('noFaq')}</div></div>`; return; }
+  let html = list.map(k=>`
+    <div class="list-card">
+      <div class="list-main">
+        <div class="list-title">${escapeHtml(k.question)}</div>
+        <div class="list-sub">${escapeHtml(k.answer)}</div>
+      </div>
+      <div class="list-actions">
+        <span class="pill">${escapeHtml(k.category||'General')}</span>
+        <button class="btn btn-ghost btn-sm" data-edit-faq="${k.id}">${t('edit')}</button>
+        <button class="btn btn-danger btn-sm" data-del-faq="${k.id}">${t('delete')}</button>
+      </div>
+    </div>`).join('');
+  viewRoot.innerHTML = html;
+  document.querySelectorAll('[data-edit-faq]').forEach(b=> b.onclick=()=>openFaqModal(b.dataset.editFaq));
+  document.querySelectorAll('[data-del-faq]').forEach(b=> b.onclick=()=>{
+    if(confirm(t('confirmDelete'))){ DATA.knowledge = DATA.knowledge.filter(x=>x.id!==b.dataset.delFaq); saveData(); showToast(t('deleted')); render(); }
+  });
+}
+function openFaqModal(id){
+  const existing = id ? DATA.knowledge.find(k=>k.id===id) : null;
+  const modal = document.getElementById('modalBody');
+  modal.innerHTML = `
+    <h3>${existing? t('edit'): t('newFaq')}</h3>
+    <div class="field"><label>${t('question')}</label><input id="f_q" value="${existing?escapeAttr(existing.question):''}"></div>
+    <div class="field"><label>${t('answer')}</label><textarea id="f_a">${existing?escapeHtml(existing.answer):''}</textarea></div>
+    <div class="field"><label>${t('category')}</label><input id="f_cat" value="${existing?escapeAttr(existing.category||''):''}"></div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="modalCancel">${t('cancel')}</button>
+      <button class="btn btn-primary" id="modalSave">${t('save')}</button>
+    </div>`;
+  openOverlay();
+  document.getElementById('modalCancel').onclick = closeOverlay;
+  document.getElementById('modalSave').onclick = ()=>{
+    const question = document.getElementById('f_q').value.trim();
+    if(!question) return;
+    const obj = { id: existing? existing.id: uid('k'), question, answer: document.getElementById('f_a').value.trim(), category: document.getElementById('f_cat').value.trim() };
+    if(existing){ DATA.knowledge = DATA.knowledge.map(x=>x.id===existing.id?obj:x); } else { DATA.knowledge.push(obj); }
+    saveData(); showToast(t('saved')); closeOverlay(); render();
+  };
+}
+
+/* ---------- History ---------- */
+function renderHistory(){
+  let list = DATA.history.filter(h=> !searchTerm || (h.prompt+h.response).toLowerCase().includes(searchTerm.toLowerCase()));
+  if(list.length===0){ viewRoot.innerHTML = `<div class="empty">${emptyIcon()}<div>${t('noHistory')}</div></div>`; return; }
+  const toolLabel = {writer:t('writerTool'), faq:t('faqTool'), summarizer:t('summarizerTool')};
+  let html = list.map(h=>`
+    <div class="list-card">
+      <div class="list-main">
+        <div class="list-title">${toolLabel[h.tool]||h.tool} · ${fmtDateTime(h.timestamp)}</div>
+        <div class="list-sub"><strong>Prompt:</strong> ${escapeHtml(h.prompt)}</div>
+        <div class="list-sub"><strong>Response:</strong> ${escapeHtml(h.response.length>200 ? h.response.slice(0,200)+'…' : h.response)}</div>
+      </div>
+      <div class="list-actions">
+        <span class="pill">${h.mode==='ai'?'AI':'Offline'}</span>
+        <button class="btn btn-danger btn-sm" data-del-history="${h.id}">${t('delete')}</button>
+      </div>
+    </div>`).join('');
+  viewRoot.innerHTML = html;
+  document.querySelectorAll('[data-del-history]').forEach(b=> b.onclick=()=>{
+    DATA.history = DATA.history.filter(x=>x.id!==b.dataset.delHistory); saveData(); showToast(t('deleted')); render();
+  });
+}
+
+/* ---------- Settings ---------- */
+function renderSettings(){
+  const s = DATA.settings;
+  let html = `<div class="settings-note">Your API key is stored only in this browser's local storage and is sent directly from your browser to your chosen AI provider (OpenAI or Anthropic) — it never passes through any server of ours. Leave this blank to use the built-in offline templates instead.</div>
+  <div class="assistant-panel">
+    <div class="field"><label>${t('provider')}</label><select id="set_provider">
+      <option value="openai" ${s.provider==='openai'?'selected':''}>OpenAI (GPT)</option>
+      <option value="anthropic" ${s.provider==='anthropic'?'selected':''}>Anthropic (Claude)</option>
+    </select></div>
+    <div class="field"><label>${t('apiKey')}</label><input type="password" id="set_key" value="${escapeAttr(s.apiKey||'')}" placeholder="sk-... or sk-ant-..."></div>
+    <div class="field"><label>${t('model')} <span class="hint">(optional — leave blank for default)</span></label><input id="set_model" value="${escapeAttr(s.model||'')}" placeholder="${s.provider==='anthropic'?'claude-3-5-haiku-latest':'gpt-4o-mini'}"></div>
+    <button class="btn btn-primary" id="btnTestConnection">${t('testConnection')}</button>
+    <div id="settingsResult"></div>
+  </div>`;
+  viewRoot.innerHTML = html;
+  document.getElementById('set_provider').addEventListener('change', ()=>{
+    const prov = document.getElementById('set_provider').value;
+    document.getElementById('set_model').placeholder = prov==='anthropic' ? 'claude-3-5-haiku-latest' : 'gpt-4o-mini';
+  });
+  document.getElementById('btnTestConnection').onclick = async ()=>{
+    const provider = document.getElementById('set_provider').value;
+    const apiKey = document.getElementById('set_key').value.trim();
+    const model = document.getElementById('set_model').value.trim();
+    DATA.settings = { provider, apiKey, model };
+    saveData();
+    updateConnectionStatus();
+    const resultEl = document.getElementById('settingsResult');
+    if(!apiKey){ resultEl.innerHTML = `<div class="hint" style="margin-top:10px;">Saved. No API key set — the Assistant will use offline templates.</div>`; showToast(t('saved')); return; }
+    resultEl.innerHTML = `<div class="hint" style="margin-top:10px;">Testing connection…</div>`;
+    try{
+      const reply = await callAI('You are a connection test. Reply with a single short sentence confirming you are working.', 'Say hello in one short sentence.');
+      resultEl.innerHTML = `<div class="result-box" style="margin-top:10px;"><span class="result-mode-badge ai">Connected</span><div>${escapeHtml(reply)}</div></div>`;
+      showToast('Connected successfully');
+    }catch(err){
+      resultEl.innerHTML = `<div class="result-box" style="margin-top:10px;border-color:var(--danger);"><span class="result-mode-badge offline">Failed</span><div>${escapeHtml(err.message||'Could not connect. Check your API key and try again.')}</div></div>`;
+      showToast('Connection failed');
+    }
+  };
+}
+
+/* ============ Misc UI helpers ============ */
+function emptyIcon(){ return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>`; }
+function openOverlay(){ document.getElementById('overlay').classList.add('show'); }
+function closeOverlay(){ document.getElementById('overlay').classList.remove('show'); }
+document.getElementById('overlay').addEventListener('click', (e)=>{ if(e.target.id==='overlay') closeOverlay(); });
+
+/* ============ Nav & top bar bindings ============ */
+document.querySelectorAll('.nav-item[data-view]').forEach(b=> b.onclick = ()=> setView(b.dataset.view));
+document.getElementById('menuBtn').onclick = ()=> document.getElementById('sidebar').classList.toggle('open');
+document.getElementById('searchInput').addEventListener('input', (e)=>{ searchTerm = e.target.value; render(); });
+document.getElementById('btnQuickAdd').onclick = ()=>{ if(currentView==='knowledge') openFaqModal(null); };
+document.getElementById('btnReset').onclick = ()=>{
+  if(confirm(t('resetConfirm'))){ DATA = seedData(); saveData(); faqChatLog = []; showToast(t('resetDone')); render(); }
+};
+
+/* ---------- Theme toggle ---------- */
+let theme = localStorage.getItem('aia_theme') || 'day';
+function applyTheme(){
+  document.documentElement.setAttribute('data-theme', theme==='day'?'day':'night');
+  document.getElementById('btnDay').classList.toggle('active', theme==='day');
+  document.getElementById('btnNight').classList.toggle('active', theme==='night');
+}
+document.getElementById('btnDay').onclick = ()=>{ theme='day'; localStorage.setItem('aia_theme','day'); applyTheme(); };
+document.getElementById('btnNight').onclick = ()=>{ theme='night'; localStorage.setItem('aia_theme','night'); applyTheme(); };
+
+/* ---------- Init ---------- */
+applyTheme();
+setView('dashboard');
+</script>
+</body>
+</html>
